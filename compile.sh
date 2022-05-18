@@ -3,6 +3,23 @@ declare -a CIRCUITS=( pedersen poseidon mimc sha256 )
 
 cd circuits
 
+compile_circuit() {
+    echo "Compiling ${1}.circom..."
+
+    # compile circuit
+
+    circom ${1}.circom --r1cs
+    snarkjs r1cs info ${1}.r1cs
+
+    # Start a new zkey and make a contribution
+    snarkjs g16s ${1}.r1cs build/ptau_15.ptau ${1}_0000.zkey
+    snarkjs zkey contribute ${1}_0000.zkey ${1}_final.zkey --1="guy" -v -e="eNtRoPy"
+
+
+    rm ${1}.r1cs
+    rm ${1}_0000.zkey
+}
+
 if [ -f ./build/ptau_15.ptau ]; then
     echo ""
 else
@@ -12,20 +29,8 @@ fi
 
 for NAME in "${CIRCUITS[@]}"
 do
-    echo "Compiling ${NAME}.circom..."
-
-    # compile circuit
-
-    circom ${NAME}.circom --r1cs
-    snarkjs r1cs info ${NAME}.r1cs
-
-    # Start a new zkey and make a contribution
-
-    snarkjs g16s ${NAME}.r1cs build/ptau_15.ptau ${NAME}_0000.zkey
-    snarkjs zkey contribute ${NAME}_0000.zkey ${NAME}_final.zkey --name="guy" -v -e="eNtRoPy"
-
-    rm ${NAME}.r1cs
-    rm ${NAME}_0000.zkey
+    time compile_circuit $NAME
+    echo "⏱ ⏱ ⏱"
 done
 
 cd ../
